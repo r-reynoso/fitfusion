@@ -23,59 +23,55 @@ jobs:
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
-        cache: true
         
-    - name: Setup Node.js (without cache for debugging)
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
+        
+    - name: Verify environment
+      run: |
+        echo "Flutter version:"
+        flutter --version
+        echo "Node version:"
+        node --version
+        echo "NPM version:"
+        npm --version
+        echo "Project structure:"
+        ls -la
         
     - name: Install Flutter dependencies
       run: |
         flutter clean
         flutter pub get
-      
-    - name: Analyze Flutter code (non-fatal)
-      run: flutter analyze || true
-      
-    - name: Run Flutter tests (if any exist)
+        
+    - name: Build Flutter web application
       run: |
-        if [ -d "test" ] && [ "$(ls -A test 2>/dev/null)" ]; then
-          flutter test || true
-        else
-          echo "No tests found - skipping test execution"
-        fi
-      
-    - name: Build Flutter web (production)
-      run: flutter build web --release --web-renderer canvaskit
+        flutter build web --release --web-renderer canvaskit
+        echo "Build completed. Contents of build/web:"
+        ls -la build/web/
       
     - name: Install Firebase CLI
       run: npm install -g firebase-tools@13.0.2
       
-    - name: Check Functions directory
+    - name: Verify Firebase service account
       run: |
-        ls -la functions/
-        echo "Functions package.json:"
-        cat functions/package.json
-        
-    - name: Install Functions dependencies and build
-      run: |
-        cd functions
-        npm install
-        npm run build
-        cd ..
-      
-    - name: Create Firebase service account file
-      run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' | base64 --decode > $HOME/service-account-key.json
+        if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+          echo "ERROR: FIREBASE_SERVICE_ACCOUNT secret is not set"
+          exit 1
+        fi
+        echo "Service account secret is available"
       env:
         FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         
-    - name: Authenticate with Firebase
+    - name: Create and authenticate with Firebase
       run: |
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/service-account-key.json
         export GOOGLE_APPLICATION_CREDENTIALS="$HOME/service-account-key.json"
-        firebase use ${{ env.FIREBASE_PROJECT_ID }} --token $(gcloud auth print-access-token) || firebase use ${{ env.FIREBASE_PROJECT_ID }}
+        firebase use ${{ env.FIREBASE_PROJECT_ID }}
+        echo "Successfully authenticated with Firebase project: ${{ env.FIREBASE_PROJECT_ID }}"
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: $HOME/service-account-key.json
+        FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         
     - name: Deploy to Firebase Hosting
       run: |
@@ -84,20 +80,25 @@ jobs:
       env:
         GOOGLE_APPLICATION_CREDENTIALS: $HOME/service-account-key.json
         
-    - name: Deploy Firebase Functions (if needed)
+    - name: Deploy Firestore rules and indexes
       run: |
         export GOOGLE_APPLICATION_CREDENTIALS="$HOME/service-account-key.json"
-        firebase deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} || echo "Functions deployment skipped or failed"
+        firebase deploy --only firestore:rules,firestore:indexes --project ${{ env.FIREBASE_PROJECT_ID }}
       env:
         GOOGLE_APPLICATION_CREDENTIALS: $HOME/service-account-key.json
       continue-on-error: true
         
-    - name: Cleanup
+    - name: Cleanup sensitive files
       run: rm -f $HOME/service-account-key.json
       if: always()
       
-    - name: Verify deployment
+    - name: Deployment successful
       run: |
-        echo "🚀 FitFusion deployed successfully!"
-        echo "🌐 Live URL: https://n5j2e49cjejvbdwkdlhaxt9d4woqgh.web.app"
-        echo "🔗 Alternative URL: https://n5j2e49cjejvbdwkdlhaxt9d4woqgh.firebaseapp.com"
+        echo "✅ FitFusion deployed successfully!"
+        echo "🌐 Live URL: https://${{ env.FIREBASE_PROJECT_ID }}.web.app"
+        echo "🔗 Alternative URL: https://${{ env.FIREBASE_PROJECT_ID }}.firebaseapp.com"
+        echo ""
+        echo "🎯 Next steps:"
+        echo "1. Visit your live app at the URLs above"
+        echo "2. Test authentication and core functionality"
+        echo "3. Configure custom domain if needed"
