@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "626826480783",
+    "project_id": "n5j2e49cjejvbdwkdlhaxt9d4woqgh",
+    "storage_bucket": "n5j2e49cjejvbdwkdlhaxt9d4woqgh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:626826480783:android:7b1445856461187f80f4fa",
+        "android_client_info": {
+          "package_name": "com.fitfusion.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQYf-ekrTiWeS1CAwFsUhY8fOE6kXkzSs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
