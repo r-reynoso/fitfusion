@@ -23,14 +23,14 @@ jobs:
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
-        cache: true
-        
+        cache: true   
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        cache-dependency-path: 'functions/package-lock.json'
+        cache-dependency-path: 'functions/package.json'    
         
     - name: Install Flutter dependencies
       run: flutter pub get
@@ -38,8 +38,13 @@ jobs:
     - name: Analyze Flutter code
       run: flutter analyze --fatal-infos
       
-    - name: Run Flutter tests
-      run: flutter test --coverage
+    - name: Run Flutter tests (if any exist)
+      run: |
+        if [ -d "test" ] && [ "$(ls -A test 2>/dev/null)" ]; then
+          flutter test --coverage
+        else
+          echo "No tests found - skipping test execution"
+        fi
       
     - name: Build Flutter web (production)
       run: flutter build web --release --no-source-maps --web-renderer canvaskit
